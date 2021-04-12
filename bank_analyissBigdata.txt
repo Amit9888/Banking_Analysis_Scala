@@ -1,0 +1,87 @@
+
+
+
+
+
+
+
+
+val bank_people_data = spark.read.option("multiline","true").json("/user/athanikarammygmail/bank_edited.json");
+//first we create a sapark dataframe by reading the dataset 
+val nonsubscribed_count=bank_people_data.filter($"y"==="no").count().toDouble
+
+initially we calculate the count of  subscribers that havenot yet registered to the scheme.
+
+val total_count=bank_people_data.count().toDouble
+
+val subscribed_count=bank_people_data.filter($"y"==="yes").count().toDouble
+#now we calculate the count of subsribers that have subscribed to the scheme.
+
+
+val succesrate=subscribed_count/total_count
+#now calculating the success rate of the program using the given formula.
+
+
+val  failurerate=notsubscribed_count/total_count
+
+//likewise calculating the failure rate of the program
+
+
+
+sql("select max(age),min(age),mean(age) from events ")
+#now we will takee a look at the max age,average age,mean age of the people from the campaighn
+
+
+bank_people_data.registerTempTable("events")
+##we will convert our spark df into register table 
+
+val median = spark.sql("SELECT percentile_approx(balance, 0.5) FROM events").show()
+
+#median from the camoaign  
+
+val age_status=spark.sql("select count(*) as number from events where y='yes'group by age  order by number desc ")
+# grouping the data based on the age of the events based on how  manny people subscribed to the program" 
+
+val maratiaulstaus="select count(*) as number,marital from events where y='yes' group by marital order by number desc"
+# grouping the data based on the marital status of the events based on how  manny people subscribed to the program" 
+
+
+val maratiaul_age_staus="select count(*) as number,marital,age from events where y='yes' group by marital,ageorder by number desc"
+# grouping the data based on  both the marital status and the age of the events based on how  manny people subscribed to the program" 
+
+
+
+
+val replace_age=spark.udf.register("age_grouping",(age:Int) => { if( age <20) "Teen" else if(age>20 && age<32) "young" else if(age>33 && age<=55) "middle a
+ge" else "old"})
+#replacing the old age column with the new age_grouping column 
+
+
+
+val bank_newdf=bank_people_data.withColumn("age",replace_age(bank_people_data("age")))
+#cerating a new bank dataframe
+
+
+
+val rightageprediction=spark.sql("select count(*) as number,age  from events_new where y='yes'group by age  order by number desc ")
+
+##now getting the right predictions from our data
+
+bank_newdf.registerTempTable("events_new")
+##we will  agaian convert our spark df into register table 
+
+
+
+val agedata2 = new StringIndexer().setInputCol("age").setOutputCol("ageindex")
+
+we will use the StringIndexer for setting of our pipeline
+
+
+var strindModel = agedata2.fit(bank_newdf)
+
+##now we will fit the pipeline
+
+
+
+strindModel.transform(bank_newdf).select("age","ageIndex").show(5)
+##final results
